@@ -1,0 +1,5 @@
+{
+  "name": "Maestro - Sheet Music Composer",
+  "description": "A modern, web-based sheet music editor using VexFlow and Gemini AI. Compose, edit, play back, and print scores seamlessly.",
+  "requestFramePermissions": []
+}
