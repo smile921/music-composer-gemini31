@@ -60,6 +60,75 @@ export const generateMelody = async (description: string): Promise<NoteData[]> =
   }
 };
 
+export const suggestChords = async (notes: NoteData[], keySignature: string): Promise<string[]> => {
+  if (!ai) {
+    throw new Error("API Key not found");
+  }
+
+  if (notes.length === 0) return [];
+
+  // Helper to convert duration to numerical beat value
+  const getBeatValue = (d: Duration) => {
+    switch (d) {
+      case Duration.Whole: return 4;
+      case Duration.Half: return 2;
+      case Duration.Quarter: return 1;
+      case Duration.Eighth: return 0.5;
+      default: return 1;
+    }
+  };
+
+  // Convert notes to a text representation grouped by measure
+  let melodyText = "";
+  let currentMeasure = 1;
+  let currentBeats = 0;
+
+  notes.forEach(n => {
+    const beats = getBeatValue(n.duration);
+    if (currentBeats + beats > 4) {
+      currentMeasure++;
+      currentBeats = 0;
+      melodyText += " | ";
+    }
+    
+    const key = n.isRest ? "Rest" : n.keys[0];
+    melodyText += `${key}(${n.duration}) `;
+    currentBeats += beats;
+  });
+
+  const prompt = `
+    I have a melody in the key of ${keySignature}.
+    The notes are: "${melodyText}".
+    
+    Please analyze the harmony and suggest a single chord for each measure.
+    Return a JSON array of strings, where each string is the chord symbol (e.g., "Cm", "G7", "Fmaj7") for that measure.
+    The array length should match the number of measures (${currentMeasure}).
+    If a measure has no clear harmony or is just rests, suggest a fitting chord based on the context or 'N.C.'.
+  `;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.ARRAY,
+          items: { type: Type.STRING }
+        },
+      },
+    });
+
+    const jsonText = response.text;
+    if (!jsonText) return [];
+
+    return JSON.parse(jsonText);
+  } catch (error) {
+    console.error("Error suggesting chords:", error);
+    throw error;
+  }
+};
+
 function isValidDuration(d: string): boolean {
   return ['w', 'h', 'q', '8'].includes(d);
 }

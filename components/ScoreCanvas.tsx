@@ -12,6 +12,8 @@ import { NoteData, Duration } from '../types';
 
 interface ScoreCanvasProps {
   notes: NoteData[];
+  keySignature: string;
+  suggestedChords?: string[];
 }
 
 interface MeasureData {
@@ -20,7 +22,7 @@ interface MeasureData {
   endRepeat: boolean;
 }
 
-const ScoreCanvas: React.FC<ScoreCanvasProps> = ({ notes }) => {
+const ScoreCanvas: React.FC<ScoreCanvasProps> = ({ notes, keySignature, suggestedChords = [] }) => {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -108,7 +110,7 @@ const ScoreCanvas: React.FC<ScoreCanvasProps> = ({ notes }) => {
     // If no notes, draw an empty stave
     if (measures.length === 0) {
         const stave = new Stave(10, 40, 300);
-        stave.addClef("treble").addTimeSignature("4/4");
+        stave.addClef("treble").addTimeSignature("4/4").addKeySignature(keySignature);
         stave.setContext(context).draw();
         renderer.resize(350, 200);
         return;
@@ -137,6 +139,7 @@ const ScoreCanvas: React.FC<ScoreCanvasProps> = ({ notes }) => {
       
       if (isFirstInRow) {
         stave.addClef("treble").addTimeSignature("4/4");
+        stave.addKeySignature(keySignature);
       }
 
       if (measureData.startRepeat) {
@@ -147,6 +150,16 @@ const ScoreCanvas: React.FC<ScoreCanvasProps> = ({ notes }) => {
       }
 
       stave.setContext(context).draw();
+
+      // Draw Suggested Chord if available
+      if (suggestedChords[i]) {
+        context.save();
+        context.font = "bold 14px sans-serif";
+        context.fillStyle = "#d97706"; // amber-600
+        // Position above the stave, slightly offset
+        context.fillText(suggestedChords[i], stave.getX() + 10, stave.getY() - 10);
+        context.restore();
+      }
 
       if (measureData.notes.length > 0) {
         const voice = new Voice({ numBeats: 4, beatValue: 4 });
@@ -160,7 +173,7 @@ const ScoreCanvas: React.FC<ScoreCanvasProps> = ({ notes }) => {
       x += measureWidth;
     });
 
-  }, [notes]);
+  }, [notes, keySignature, suggestedChords]);
 
   return (
     <div className="flex justify-center overflow-x-auto pb-8">

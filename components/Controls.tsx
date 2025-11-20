@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Duration, NoteData } from '../types';
-import { Music2, Play, Trash2, Printer, Eraser, Mic, Loader2, BookOpen, Repeat } from 'lucide-react';
-import { generateMelody } from '../services/geminiService';
+import { Music2, Play, Trash2, Printer, Eraser, BookOpen, Loader2, Zap, ZapOff, Sparkles, Bot, BotOff } from 'lucide-react';
+import { generateMelody, suggestChords } from '../services/geminiService';
+import { KEY_SIGNATURES } from '../constants';
 
 interface ControlsProps {
   selectedDuration: Duration;
@@ -15,6 +16,16 @@ interface ControlsProps {
   onOpenLibrary: () => void;
   onToggleStartRepeat: () => void;
   onToggleEndRepeat: () => void;
+  keySignature: string;
+  setKeySignature: (key: string) => void;
+  bpm: number;
+  setBpm: (bpm: number) => void;
+  isMetronomeOn: boolean;
+  toggleMetronome: () => void;
+  notesForAI: NoteData[]; // Passed to allow chord suggestion to read notes
+  onChordsGenerated: (chords: string[]) => void;
+  isAiEnabled: boolean;
+  toggleAiEnabled: () => void;
 }
 
 const Controls: React.FC<ControlsProps> = ({
@@ -28,10 +39,21 @@ const Controls: React.FC<ControlsProps> = ({
   onAddNotes,
   onOpenLibrary,
   onToggleStartRepeat,
-  onToggleEndRepeat
+  onToggleEndRepeat,
+  keySignature,
+  setKeySignature,
+  bpm,
+  setBpm,
+  isMetronomeOn,
+  toggleMetronome,
+  notesForAI,
+  onChordsGenerated,
+  isAiEnabled,
+  toggleAiEnabled
 }) => {
   const [aiPrompt, setAiPrompt] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isSuggestingChords, setIsSuggestingChords] = useState(false);
   const [showAiModal, setShowAiModal] = useState(false);
 
   const handlePrint = () => {
@@ -50,6 +72,23 @@ const Controls: React.FC<ControlsProps> = ({
       alert('Failed to generate melody. Please check your API Key or try again.');
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  const handleSuggestChords = async () => {
+    if (notesForAI.length === 0) {
+      alert("Please compose some notes first.");
+      return;
+    }
+    setIsSuggestingChords(true);
+    try {
+      const chords = await suggestChords(notesForAI, keySignature);
+      onChordsGenerated(chords);
+    } catch (e) {
+      console.error(e);
+      alert("Failed to suggest chords. Please try again.");
+    } finally {
+      setIsSuggestingChords(false);
     }
   };
 
@@ -91,6 +130,22 @@ const Controls: React.FC<ControlsProps> = ({
 
       {/* Center: Actions */}
       <div className="flex items-center gap-2">
+        {/* Key Signature Selector */}
+        <div className="relative mr-2 hidden xl:block">
+          <select 
+            value={keySignature} 
+            onChange={(e) => setKeySignature(e.target.value)}
+            className="appearance-none bg-white border border-gray-200 text-gray-700 py-2 pl-3 pr-8 rounded-lg leading-tight focus:outline-none focus:bg-white focus:border-amber-500 cursor-pointer text-sm font-medium"
+          >
+            {KEY_SIGNATURES.map(k => (
+              <option key={k} value={k}>{k} Major/Minor</option>
+            ))}
+          </select>
+          <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+            <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+          </div>
+        </div>
+
         {/* Repeat Controls */}
         <div className="flex items-center gap-1 mr-2 border-r border-gray-200 pr-2">
            <button onClick={onToggleStartRepeat} className="p-2 text-gray-700 hover:bg-amber-50 hover:text-amber-600 rounded-lg font-bold font-serif text-lg" title="Start Repeat">
@@ -101,25 +156,72 @@ const Controls: React.FC<ControlsProps> = ({
            </button>
         </div>
 
+        {/* Metronome */}
+        <div className="flex items-center gap-2 mr-2 border-r border-gray-200 pr-2">
+           <div className="flex items-center gap-1 bg-gray-50 rounded-lg border border-gray-200 px-2 py-1">
+             <span className="text-xs font-bold text-gray-500">BPM</span>
+             <input 
+               type="number" 
+               value={bpm} 
+               onChange={(e) => setBpm(Math.max(40, Math.min(240, parseInt(e.target.value) || 100)))}
+               className="w-12 bg-transparent text-center text-sm font-medium focus:outline-none"
+             />
+           </div>
+           <button 
+             onClick={toggleMetronome} 
+             className={`p-2 rounded-full transition-all ${isMetronomeOn ? 'bg-amber-500 text-white shadow-md' : 'text-gray-500 hover:bg-gray-100'}`}
+             title="Metronome"
+           >
+             {isMetronomeOn ? <Zap size={18} fill="currentColor" /> : <ZapOff size={18} />}
+           </button>
+        </div>
+
         <button onClick={onOpenLibrary} className="px-3 py-2 text-gray-700 bg-amber-50 border border-amber-200 hover:bg-amber-100 rounded-lg flex items-center gap-2 transition-colors" title="Open Library">
            <BookOpen size={18} />
            <span className="hidden sm:inline">Library</span>
         </button>
-        <div className="h-6 w-px bg-gray-300 mx-1"></div>
+        <div className="h-6 w-px bg-gray-300 mx-1 hidden md:block"></div>
         <button onClick={onUndo} className="p-2 text-gray-600 hover:bg-gray-100 rounded-full" title="Undo Last Note">
           <Eraser size={20} />
         </button>
         <button onClick={onClear} className="p-2 text-red-500 hover:bg-red-50 rounded-full" title="Clear Score">
           <Trash2 size={20} />
         </button>
-        <div className="h-6 w-px bg-gray-300 mx-2"></div>
-        <button 
-          onClick={() => setShowAiModal(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-full hover:bg-purple-700 transition-all shadow-md hover:shadow-lg"
+        <div className="h-6 w-px bg-gray-300 mx-2 hidden md:block"></div>
+        
+        {/* AI Toggle */}
+        <button
+            onClick={toggleAiEnabled}
+            className={`p-2 rounded-full transition-all ${
+                isAiEnabled 
+                ? 'text-purple-600 bg-purple-50 hover:bg-purple-100' 
+                : 'text-gray-400 hover:bg-gray-100 hover:text-gray-600'
+            }`}
+            title={isAiEnabled ? "Disable AI Assistant" : "Enable AI Assistant"}
         >
-          <Music2 size={18} />
-          <span>AI Compose</span>
+            {isAiEnabled ? <Bot size={20} /> : <BotOff size={20} />}
         </button>
+
+        {/* AI Controls Group */}
+        {isAiEnabled && (
+          <div className="flex items-center gap-2 bg-purple-50 p-1 rounded-full border border-purple-100 animate-in fade-in slide-in-from-right-4 duration-300">
+            <button 
+              onClick={handleSuggestChords}
+              disabled={isSuggestingChords}
+              className="p-2 text-purple-600 hover:bg-purple-100 rounded-full transition-colors flex items-center justify-center disabled:opacity-50"
+              title="Suggest Chords for current melody"
+            >
+              {isSuggestingChords ? <Loader2 className="animate-spin" size={18} /> : <Sparkles size={18} />}
+            </button>
+            <button 
+              onClick={() => setShowAiModal(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-full hover:bg-purple-700 transition-all shadow-md hover:shadow-lg text-sm font-medium"
+            >
+              <Music2 size={16} />
+              <span className="hidden md:inline">Compose</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Right: Play & Print */}
@@ -142,7 +244,7 @@ const Controls: React.FC<ControlsProps> = ({
       </div>
 
       {/* AI Modal */}
-      {showAiModal && (
+      {showAiModal && isAiEnabled && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-2xl">
             <h3 className="text-lg font-bold mb-4 flex items-center gap-2">

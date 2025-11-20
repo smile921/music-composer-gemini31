@@ -1,5 +1,9 @@
 import { Duration, SongPreset } from './types';
 
+export const KEY_SIGNATURES = [
+  'C', 'G', 'D', 'A', 'E', 'F', 'Bb', 'Eb', 'Ab', 'Am', 'Em', 'Dm'
+];
+
 export const PRESETS: SongPreset[] = [
   {
     id: 'got-theme',
@@ -7,6 +11,8 @@ export const PRESETS: SongPreset[] = [
     composer: "Ramin Djawadi",
     category: "Soundtrack",
     difficulty: "Medium",
+    keySignature: 'C',
+    tempo: 90,
     notes: [
       { id: '1', keys: ['g/4'], duration: Duration.Half },
       { id: '2', keys: ['c/4'], duration: Duration.Half },
@@ -35,6 +41,8 @@ export const PRESETS: SongPreset[] = [
     composer: "Traditional",
     category: "Folk",
     difficulty: "Easy",
+    keySignature: 'C',
+    tempo: 100,
     notes: [
       { id: '1', keys: ['c/4'], duration: Duration.Quarter },
       { id: '2', keys: ['c/4'], duration: Duration.Quarter },
@@ -58,6 +66,8 @@ export const PRESETS: SongPreset[] = [
     composer: "Ludwig van Beethoven",
     category: "Classical",
     difficulty: "Easy",
+    keySignature: 'C',
+    tempo: 120,
     notes: [
       { id: '1', keys: ['e/4'], duration: Duration.Quarter },
       { id: '2', keys: ['e/4'], duration: Duration.Quarter },
@@ -71,7 +81,7 @@ export const PRESETS: SongPreset[] = [
       { id: '10', keys: ['c/4'], duration: Duration.Quarter },
       { id: '11', keys: ['d/4'], duration: Duration.Quarter },
       { id: '12', keys: ['e/4'], duration: Duration.Quarter },
-      { id: '13', keys: ['e/4'], duration: Duration.Quarter }, // Dotted quarter logic handled as quarter for simplicity or needs tie
+      { id: '13', keys: ['e/4'], duration: Duration.Quarter }, 
       { id: '14', keys: ['d/4'], duration: Duration.Eighth },
       { id: '15', keys: ['d/4'], duration: Duration.Half },
     ]
@@ -82,6 +92,8 @@ export const PRESETS: SongPreset[] = [
     composer: "Ludwig van Beethoven",
     category: "Classical",
     difficulty: "Medium",
+    keySignature: 'Am',
+    tempo: 140,
     notes: [
       { id: '1', keys: ['e/5'], duration: Duration.Eighth },
       { id: '2', keys: ['d/5'], duration: Duration.Eighth, accidental: '#' },

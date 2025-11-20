@@ -4,7 +4,7 @@ import ScoreCanvas from './components/ScoreCanvas';
 import Piano from './components/Piano';
 import Controls from './components/Controls';
 import LibraryModal from './components/LibraryModal';
-import { playMelody } from './services/audioService';
+import { playMelody, startMetronome, stopMetronome } from './services/audioService';
 import { FileMusic } from 'lucide-react';
 
 const App: React.FC = () => {
@@ -13,6 +13,11 @@ const App: React.FC = () => {
   const [isRestMode, setRestMode] = useState(false);
   const [isLibraryOpen, setIsLibraryOpen] = useState(false);
   const [currentSongTitle, setCurrentSongTitle] = useState<string>('');
+  const [keySignature, setKeySignature] = useState<string>('C');
+  const [bpm, setBpm] = useState<number>(100);
+  const [isMetronomeOn, setIsMetronomeOn] = useState(false);
+  const [suggestedChords, setSuggestedChords] = useState<string[]>([]);
+  const [isAiEnabled, setIsAiEnabled] = useState(true);
 
   const addNote = useCallback((key: string, octave: number, accidental?: string) => {
     const newNote: NoteData = {
@@ -22,8 +27,12 @@ const App: React.FC = () => {
       isRest: isRestMode,
       accidental: isRestMode ? undefined : accidental,
     };
-    setNotes((prev) => [...prev, newNote]);
-  }, [selectedDuration, isRestMode]);
+    setNotes((prev) => {
+      // Clear chords if notes change to avoid mismatch
+      if (suggestedChords.length > 0) setSuggestedChords([]); 
+      return [...prev, newNote];
+    });
+  }, [selectedDuration, isRestMode, suggestedChords]);
 
   const handlePianoClick = (key: string, octave: number, accidental?: string) => {
     if (isRestMode) {
@@ -46,26 +55,63 @@ const App: React.FC = () => {
     }
     setNotes(preset.notes);
     setCurrentSongTitle(preset.name);
+    setKeySignature(preset.keySignature || 'C');
+    setSuggestedChords([]);
+    if (preset.tempo) setBpm(preset.tempo);
   };
 
   const handlePlay = () => {
-    playMelody(notes);
+    // If standalone metronome is ticking, stop it to prevent overlap/phasing during playback
+    if (isMetronomeOn) {
+       stopMetronome();
+    }
+    
+    // Play melody, passing the metronome state to generate synchronized clicks if needed
+    playMelody(notes, bpm, isMetronomeOn);
+    
+    // Note: We don't automatically restart the standalone metronome after playback
+    // The user must toggle it back on if they want to continue practicing with just the click.
+    if (isMetronomeOn) {
+       setIsMetronomeOn(false);
+    }
+  };
+
+  const toggleMetronome = () => {
+    const newState = !isMetronomeOn;
+    setIsMetronomeOn(newState);
+    if (newState) {
+      startMetronome(bpm);
+    } else {
+      stopMetronome();
+    }
+  };
+  
+  // Update metronome if it's running and BPM changes
+  const handleBpmChange = (newBpm: number) => {
+    setBpm(newBpm);
+    if (isMetronomeOn) {
+      startMetronome(newBpm);
+    }
   };
 
   const handleClear = () => {
     if (confirm("Clear all notes?")) {
       setNotes([]);
       setCurrentSongTitle('');
+      setKeySignature('C');
+      setSuggestedChords([]);
     }
   };
 
   const handleUndo = () => {
     setNotes((prev) => prev.slice(0, -1));
+    setSuggestedChords([]);
   };
 
   const handleAddAiNotes = (newNotes: NoteData[]) => {
     setNotes((prev) => [...prev, ...newNotes]);
     setCurrentSongTitle('AI Composition');
+    setSuggestedChords([]);
   };
 
   // Toggle repeat start on the last note
@@ -125,6 +171,16 @@ const App: React.FC = () => {
         onOpenLibrary={() => setIsLibraryOpen(true)}
         onToggleStartRepeat={handleToggleStartRepeat}
         onToggleEndRepeat={handleToggleEndRepeat}
+        keySignature={keySignature}
+        setKeySignature={setKeySignature}
+        bpm={bpm}
+        setBpm={handleBpmChange}
+        isMetronomeOn={isMetronomeOn}
+        toggleMetronome={toggleMetronome}
+        notesForAI={notes}
+        onChordsGenerated={setSuggestedChords}
+        isAiEnabled={isAiEnabled}
+        toggleAiEnabled={() => setIsAiEnabled(!isAiEnabled)}
       />
 
       {/* Main Workspace */}
@@ -151,7 +207,11 @@ const App: React.FC = () => {
                  </button>
                </div>
              ) : (
-                <ScoreCanvas notes={notes} />
+                <ScoreCanvas 
+                  notes={notes} 
+                  keySignature={keySignature} 
+                  suggestedChords={suggestedChords}
+                />
              )}
           </div>
         </div>

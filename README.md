@@ -7,6 +7,7 @@ Maestro is a modern, web-based sheet music editor built with React, VexFlow, and
 ### 🎹 Composition & Editing
 - **Virtual Piano Interface**: Visual input for notes across 3 octaves (C3-B5).
 - **Real-time Rendering**: Instant visual feedback using VexFlow to render standard music notation.
+- **Key Signatures**: Support for changing key signatures (e.g., G Major, D Minor) which updates stave rendering.
 - **Note Controls**: Support for various durations (Whole, Half, Quarter, Eighth).
 - **Rest Mode**: Input rests instead of notes.
 - **Accidentals**: Support for Sharps (#) and Flats (b).
@@ -15,6 +16,7 @@ Maestro is a modern, web-based sheet music editor built with React, VexFlow, and
 
 ### 🤖 AI Integration
 - **Gemini AI Composer**: Generate melodies based on natural language descriptions (e.g., "A sad melody in D minor").
+- **Chord Suggestions**: Analyze your melody and receive AI-generated chord progression suggestions displayed on the score.
 - **Automatic Transcription**: Converts AI JSON responses directly into notation on the staff.
 
 ### 📂 Library & Persistence
@@ -23,8 +25,9 @@ Maestro is a modern, web-based sheet music editor built with React, VexFlow, and
 - **Search & Filter**: Filter songs by category (Soundtrack, Classical, Folk, Pop) or search by title/composer.
 - **Management**: Delete custom saved songs.
 
-### 🖨️ Export & Playback
+### 🖨️ Export, Playback & Practice
 - **Audio Playback**: Synthetic sine-wave playback using the Web Audio API.
+- **Metronome**: Built-in metronome with adjustable BPM that syncs with playback for practice.
 - **Print Optimization**: Custom CSS for high-quality printing (removes UI elements, formats for A4 paper).
 
 ## 🛠️ Tech Stack

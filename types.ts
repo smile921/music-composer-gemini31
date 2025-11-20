@@ -23,6 +23,8 @@ export interface SongPreset {
   composer: string;
   category: SongCategory;
   difficulty: 'Easy' | 'Medium' | 'Hard';
+  keySignature?: string;
+  tempo?: number;
   notes: NoteData[];
 }
 
